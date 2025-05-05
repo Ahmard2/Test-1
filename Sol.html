@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Solana Transfer with Fee Payer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #1e1e1e;
+      color: #f5f5f5;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+    }
+    
+    .container {
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    h2 {
+      color: #9945FF;
+      margin-top: 0;
+      border-bottom: 1px solid #444;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+    
+    .required::after {
+      content: " *";
+      color: #ff5757;
+    }
+    
+    input, button, select {
+      width: 100%;
+      padding: 12px;
+      margin: 4px 0;
+      border-radius: 4px;
+      border: 1px solid #444;
+      background: #333;
+      color: #f5f5f5;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #9945FF;
+      box-shadow: 0 0 0 2px rgba(153, 69, 255, 0.2);
+    }
+    
+    .note {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    
+    button {
+      background-color: #9945FF;
+      color: white;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      margin-top: 10px;
+      transition: background-color 0.2s;
+    }
+    
+    button:hover {
+      background-color: #8035e0;
+    }
+    
+    button:disabled {
+      background-color: #666;
+      cursor: not-allowed;
+    }
+    
+    #status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 4px;
+      font-weight: bold;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .status-idle {
+      background: #333;
+    }
+    
+    .status-loading {
+      background: #2b4562;
+      color: #90caf9;
+    }
+    
+    .status-success {
+      background: #1e4620;
+      color: #a5d6a7;
+    }
+    
+    .status-error {
+      background: #621e1e;
+      color: #ef9a9a;
+    }
+    
+    .tx-link {
+      color: #9945FF;
+      text-decoration: none;
+    }
+    
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+    
+    .roles {
+      display: flex;
+      margin-bottom: 20px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .role {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+    }
+    
+    .role-sender {
+      background: #2d3748;
+      border-right: 1px solid #444;
+    }
+    
+    .role-feepayer {
+      background: #3c2d48;
+    }
+    
+    .role-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .role-desc {
+      font-size: 12px;
+      color: #aaa;
+    }
+    
+    .wallet-info {
+      margin-top: 16px;
+      padding: 12px;
+      background: #333;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .wallet-info-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #9945FF;
+    }
+    
+    .wallet-balance {
+      margin-bottom: 4px;
+    }
+    
+    .wallet-address {
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+      color: #aaa;
+    }
+    
+    .toggle-visibility {
+      background: none;
+      border: none;
+      color: #9945FF;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      margin-left: 8px;
+      width: auto;
+    }
+    
+    .input-group {
+      position: relative;
+    }
+    
+    .clear-input {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #aaa;
+      cursor: pointer;
+      padding: 0;
+      width: auto;
+      font-size: 16px;
+    }
+    
+    .transaction-history {
+      margin-top: 20px;
+      border-top: 1px solid #444;
+      padding-top: 16px;
+    }
+    
+    .transaction-item {
+      padding: 8px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      background: #333;
+    }
+    
+    .transaction-success {
+      border-left: 3px solid #4caf50;
+    }
+    
+    .transaction-error {
+      border-left: 3px solid #f44336;
+    }
+    
+    .transaction-pending {
+      border-left: 3px solid #ff9800;
+    }
+    
+    .transaction-time {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 4px;
+    }
+    
+    .transaction-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .transaction-amount {
+      font-weight: bold;
+    }
+    
+    .debug-info {
+      margin-top: 16px;
+      padding: 12px;
+      background: #333;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    
+    .debug-toggle {
+      background: none;
+      border: none;
+      color: #9945FF;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 0;
+      margin-top: 8px;
+      width: auto;
+      text-decoration: underline;
+    }
+    
+    .advanced-options {
+      margin-top: 16px;
+      padding: 12px;
+      background: #333;
+      border-radius: 4px;
+      border: 1px solid #444;
+    }
+    
+    .advanced-toggle {
+      background: none;
+      border: none;
+      color: #9945FF;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0;
+      margin-bottom: 8px;
+      width: auto;
+      display: flex;
+      align-items: center;
+    }
+    
+    .advanced-toggle::after {
+      content: "▼";
+      margin-left: 5px;
+      font-size: 10px;
+    }
+    
+    .advanced-toggle.collapsed::after {
+      content: "►";
+    }
+    
+    .advanced-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Solana Transfer with Fee Payer</h2>
+    
+    <div class="roles">
+      <div class="role role-sender">
+        <div class="role-title">Sender Wallet</div>
+        <div class="role-desc">Provides the SOL to transfer</div>
+      </div>
+      <div class="role role-feepayer">
+        <div class="role-title">Fee Payer Wallet</div>
+        <div class="role-desc">Pays transaction fees only</div>
+      </div>
+    </div>
+
+    <div id="walletInfo" class="wallet-info" style="display: none;">
+      <div class="wallet-info-title">Wallet Information</div>
+      <div id="senderInfo">
+        <div class="wallet-balance">Sender Balance: <span id="senderBalance">Loading...</span></div>
+        <div class="wallet-address">Address: <span id="senderAddress">Loading...</span></div>
+        <div id="senderAccountInfo" class="wallet-address" style="display: none;">Account Type: <span id="senderAccountType">Loading...</span></div>
+      </div>
+      <div id="feePayerInfo" style="margin-top: 8px;">
+        <div class="wallet-balance">Fee Payer Balance: <span id="feePayerBalance">Loading...</span></div>
+        <div class="wallet-address">Address: <span id="feePayerAddress">Loading...</span></div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="privateKey" class="required">Sender Private Key (Base58):</label>
+      <div class="input-group">
+        <input id="privateKey" type="password" 
+               value="2sZrXy8GtCxVM17w8g3Km985Pdc3Kg1qLb36JBdy5o3SqHaZx85UuL2o7jeh7NjHSQVEqyd6oMzuKkL5B8GFeY91" />
+        <button class="toggle-visibility" onclick="toggleVisibility('privateKey')">Show</button>
+        <button class="clear-input" onclick="clearInput('privateKey')">✕</button>
+      </div>
+      <div class="note">The wallet that will send SOL (doesn't need SOL for fees)</div>
+    </div>
+
+    <div class="form-group">
+      <label for="recipient" class="required">Recipient Address:</label>
+      <div class="input-group">
+        <input id="recipient" type="text" value="AX27Cmw7x9VSRHfhxvgfoSzJB2MpFt4Qh9gLH3u3bgpE" />
+        <button class="clear-input" onclick="clearInput('recipient')">✕</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="amount" class="required">Amount (SOL):</label>
+      <div class="input-group">
+        <input id="amount" type="number" step="0.0001" min="0.000001" value="0.01" />
+        <button class="clear-input" onclick="clearInput('amount')">✕</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="feePayerPrivateKey" class="required">Fee Payer Private Key:</label>
+      <div class="input-group">
+        <input id="feePayerPrivateKey" type="password" 
+               value="2AsuzUnPYA9uuTmCEPFtaRZsrCfu7SJZASW7ymKV9BBxbuap4oVyKsDZxyYJDzSGbP21WFw35ZfzKEsF6euXED4S" />
+        <button class="toggle-visibility" onclick="toggleVisibility('feePayerPrivateKey')">Show</button>
+        <button class="clear-input" onclick="clearInput('feePayerPrivateKey')">✕</button>
+      </div>
+      <div class="note">A separate wallet that will ONLY pay transaction fees</div>
+    </div>
+
+    <div class="advanced-options">
+      <button id="advancedToggle" class="advanced-toggle collapsed">Advanced Options</button>
+      <div id="advancedContent" class="advanced-content">
+        <div class="form-group">
+          <label for="transferMethod">Transfer Method:</label>
+          <select id="transferMethod">
+            <option value="standard">Standard Transfer</option>
+            <option value="createAccount" selected>Create Account + Transfer</option>
+            <option value="withReference">Transfer with Reference</option>
+            <option value="intermediate">Intermediate Account</option>
+            <option value="closeAccount">Close Account + Transfer</option>
+          </select>
+          <div class="note">Different methods to handle special wallet types</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="priorityFee">Priority Fee (micro-lamports):</label>
+          <input id="priorityFee" type="number" min="0" step="1000" value="50000" />
+          <div class="note">Higher values may help during network congestion</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="checkWallets">Check Wallet Balances</button>
+    <button id="sendButton">Send SOL</button>
+    <div id="status" class="status-idle">Ready to send</div>
+    
+    <button id="debugToggle" class="debug-toggle" style="display: none;">Show Debug Information</button>
+    <div id="debugInfo" class="debug-info"></div>
+    
+    <div id="transactionHistory" class="transaction-history" style="display: none;">
+      <h3>Transaction History</h3>
+      <div id="transactionList"></div>
+    </div>
+  </div>
+
+  <!-- Script for UI interactions -->
+  <script>
+    function toggleVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      const button = input.nextElementSibling;
+      
+      if (input.type === "password") {
+        input.type = "text";
+        button.textContent = "Hide";
+      } else {
+        input.type = "password";
+        button.textContent = "Show";
+      }
+    }
+    
+    function clearInput(inputId) {
+      document.getElementById(inputId).value = "";
+    }
+    
+    // Toggle advanced options
+    document.getElementById("advancedToggle").addEventListener("click", function() {
+      const content = document.getElementById("advancedContent");
+      const toggle = document.getElementById("advancedToggle");
+      
+      if (content.style.display === "block") {
+        content.style.display = "none";
+        toggle.classList.add("collapsed");
+      } else {
+        content.style.display = "block";
+        toggle.classList.remove("collapsed");
+      }
+    });
+    
+    // Toggle debug info
+    document.getElementById("debugToggle").addEventListener("click", function() {
+      const debugInfo = document.getElementById("debugInfo");
+      const debugToggle = document.getElementById("debugToggle");
+      
+      if (debugInfo.style.display === "block") {
+        debugInfo.style.display = "none";
+        debugToggle.textContent = "Show Debug Information";
+      } else {
+        debugInfo.style.display = "block";
+        debugToggle.textContent = "Hide Debug Information";
+      }
+    });
+  </script>
+
+  <!-- Single module script pulling in both bs58 and solanaWeb3 via ESM -->
+  <script type="module">
+    import bs58 from 'https://esm.sh/bs58';
+    import {
+      Connection,
+      Keypair,
+      PublicKey,
+      SystemProgram,
+      LAMPORTS_PER_SOL,
+      Transaction,
+      ComputeBudgetProgram,
+      sendAndConfirmTransaction,
+      SYSVAR_RENT_PUBKEY,
+      TransactionInstruction
+    } from 'https://esm.sh/@solana/web3.js';
+
+    // Elements
+    const privateKeyEl = document.getElementById("privateKey");
+    const recipientEl = document.getElementById("recipient");
+    const amountEl = document.getElementById("amount");
+    const feePayerKeyEl = document.getElementById("feePayerPrivateKey");
+    const sendButtonEl = document.getElementById("sendButton");
+    const checkWalletsEl = document.getElementById("checkWallets");
+    const statusEl = document.getElementById("status");
+    const walletInfoEl = document.getElementById("walletInfo");
+    const senderBalanceEl = document.getElementById("senderBalance");
+    const senderAddressEl = document.getElementById("senderAddress");
+    const senderAccountTypeEl = document.getElementById("senderAccountType");
+    const senderAccountInfoEl = document.getElementById("senderAccountInfo");
+    const feePayerBalanceEl = document.getElementById("feePayerBalance");
+    const feePayerAddressEl = document.getElementById("feePayerAddress");
+    const transactionHistoryEl = document.getElementById("transactionHistory");
+    const transactionListEl = document.getElementById("transactionList");
+    const debugInfoEl = document.getElementById("debugInfo");
+    const debugToggleEl = document.getElementById("debugToggle");
+    const transferMethodEl = document.getElementById("transferMethod");
+    const priorityFeeEl = document.getElementById("priorityFee");
+
+    // Transaction history
+    const transactions = [];
+    const MAX_TRANSACTIONS = 5;
+
+    // Debug logs
+    let debugLogs = [];
+    
+    // Helper: Add debug log
+    function addDebugLog(message, data = null) {
+      const timestamp = new Date().toLocaleTimeString();
+      let logEntry = `[${timestamp}] ${message}`;
+      
+      if (data) {
+        try {
+          if (typeof data === 'object') {
+            logEntry += "\n" + JSON.stringify(data, null, 2);
+          } else {
+            logEntry += "\n" + data;
+          }
+        } catch (e) {
+          logEntry += "\n[Unable to stringify data]";
+        }
+      }
+      
+      debugLogs.push(logEntry);
+      
+      // Update debug info if visible
+      if (debugInfoEl.style.display === "block") {
+        debugInfoEl.textContent = debugLogs.join("\n\n");
+        // Scroll to bottom
+        debugInfoEl.scrollTop = debugInfoEl.scrollHeight;
+      }
+      
+      // Show debug toggle
+      debugToggleEl.style.display = "block";
+      
+      // Log to console as well
+      console.log(message, data);
+    }
+
+    // 1) Mainnet connection with multiple RPC fallbacks
+    const RPC_ENDPOINTS = [
+      "https://mainnet.helius-rpc.com/?api-key=8b288a49-8836-4e19-b1c0-9a88153beab5",
+      "https://api.mainnet-beta.solana.com",
+      "https://solana-mainnet.g.alchemy.com/v2/demo",
+      "https://solana-api.projectserum.com"
+    ];
+    
+    let currentRpcIndex = 0;
+    let connection = new Connection(RPC_ENDPOINTS[currentRpcIndex], "confirmed");
+
+    // Helper: Try another RPC if current one fails
+    function getNextRpcConnection() {
+      currentRpcIndex = (currentRpcIndex + 1) % RPC_ENDPOINTS.length;
+      addDebugLog(`Switching to RPC endpoint: ${RPC_ENDPOINTS[currentRpcIndex]}`);
+      return new Connection(RPC_ENDPOINTS[currentRpcIndex], "confirmed");
+    }
+
+    // Helper: Update status with appropriate styling
+    function updateStatus(message, type = "idle") {
+      statusEl.textContent = message;
+      statusEl.className = "";
+      statusEl.classList.add(`status-${type}`);
+    }
+
+    // Helper: Format SOL amount
+    function formatSol(lamports) {
+      return (lamports / LAMPORTS_PER_SOL).toFixed(6);
+    }
+
+    // Helper: retry blockhash fetch
+    async function getBlockhashWithRetry(retries = 3) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+          return { blockhash, lastValidBlockHeight };
+        } catch (err) {
+          addDebugLog(`Failed to get blockhash (attempt ${i+1}/${retries}):`, err);
+          
+          if (i + 1 === retries) throw err;
+          
+          // Try another RPC endpoint
+          connection = getNextRpcConnection();
+          await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        }
+      }
+    }
+
+    // Helper: Validate a Base58 private key
+    function isValidPrivateKey(key) {
+      try {
+        const decoded = bs58.decode(key);
+        return decoded.length === 64; // Solana private keys are 64 bytes
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Helper: Validate a Solana public key
+    function isValidPublicKey(address) {
+      try {
+        new PublicKey(address);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Helper: Add transaction to history
+    function addTransactionToHistory(tx) {
+      // Add to beginning of array
+      transactions.unshift(tx);
+      
+      // Limit to max transactions
+      if (transactions.length > MAX_TRANSACTIONS) {
+        transactions.pop();
+      }
+      
+      // Show transaction history section
+      transactionHistoryEl.style.display = "block";
+      
+      // Render transactions
+      renderTransactionHistory();
+    }
+    
+    // Helper: Render transaction history
+    function renderTransactionHistory() {
+      transactionListEl.innerHTML = "";
+      
+      if (transactions.length === 0) {
+        transactionListEl.innerHTML = "<p>No transactions yet</p>";
+        return;
+      }
+      
+      transactions.forEach(tx => {
+        const txItem = document.createElement("div");
+        txItem.className = `transaction-item transaction-${tx.status}`;
+        
+        const txTime = document.createElement("div");
+        txTime.className = "transaction-time";
+        txTime.textContent = tx.time;
+        
+        const txDetails = document.createElement("div");
+        txDetails.className = "transaction-details";
+        
+        const txAmount = document.createElement("div");
+        txAmount.className = "transaction-amount";
+        txAmount.textContent = `${tx.amount} SOL`;
+        
+        const txLink = document.createElement("a");
+        txLink.href = `https://explorer.solana.com/tx/${tx.signature}?cluster=mainnet`;
+        txLink.target = "_blank";
+        txLink.className = "tx-link";
+        txLink.textContent = "View";
+        
+        txDetails.appendChild(txAmount);
+        txDetails.appendChild(txLink);
+        
+        txItem.appendChild(txTime);
+        txItem.appendChild(txDetails);
+        
+        transactionListEl.appendChild(txItem);
+      });
+    }
+
+    // Helper: Get account info and determine if it's a PDA or special account
+    async function getAccountDetails(publicKey) {
+      try {
+        const accountInfo = await connection.getAccountInfo(publicKey);
+        
+        if (!accountInfo) {
+          return { exists: false, type: "Not Found", owner: null, data: null };
+        }
+        
+        let accountType = "Standard Account";
+        
+        // Check if it's owned by a program (not the System Program)
+        if (!accountInfo.owner.equals(SystemProgram.programId)) {
+          accountType = "Program Owned Account";
+        }
+        
+        // Check if it might be a PDA
+        try {
+          // This is a heuristic - true PDAs can't be converted to keypairs
+          Keypair.fromSeed(publicKey.toBytes().slice(0, 32));
+        } catch (e) {
+          accountType = "Likely PDA";
+        }
+        
+        return {
+          exists: true,
+          type: accountType,
+          owner: accountInfo.owner.toBase58(),
+          executable: accountInfo.executable,
+          lamports: accountInfo.lamports,
+          data: accountInfo.data
+        };
+      } catch (err) {
+        addDebugLog("Error getting account details:", err);
+        return { exists: false, type: "Error", owner: null, data: null };
+      }
+    }
+
+    // Add this function somewhere before the sendSol function
+    function isProgramOwnedAccount(accountDetails) {
+      return (
+        accountDetails &&
+        accountDetails.exists &&
+        accountDetails.owner &&
+        accountDetails.owner !== SystemProgram.programId.toBase58()
+      );
+    }
+
+    // Helper: Analyze wallet type in more detail
+    async function analyzeWalletType(publicKey) {
+      try {
+        const accountInfo = await connection.getAccountInfo(publicKey);
+        if (!accountInfo) {
+          return { type: "non-existent", details: "Account does not exist" };
+        }
+        
+        // Check owner program
+        const owner = accountInfo.owner.toBase58();
+        const isSystemOwned = owner === SystemProgram.programId.toBase58();
+        
+        // Check data
+        const hasData = accountInfo.data.length > 0;
+        
+        // Check if derivable (helps identify PDAs)
+        let isProbablyPDA = false;
+        try {
+          Keypair.fromSeed(publicKey.toBytes().slice(0, 32));
+        } catch (e) {
+          isProbablyPDA = true;
+        }
+        
+        // Check for known program IDs that might require special handling
+        const knownPrograms = {
+          "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA": "SPL Token Program",
+          "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL": "Associated Token Account Program",
+          "11111111111111111111111111111111": "System Program",
+          "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr": "Memo Program"
+        };
+        
+        const programName = knownPrograms[owner] || `Unknown Program (${owner})`;
+        
+        // Detailed analysis
+        if (isSystemOwned && !hasData && !isProbablyPDA) {
+          return { 
+            type: "standard", 
+            details: "Standard system account",
+            recommendedMethod: "standard"
+          };
+        } else if (!isSystemOwned) {
+          // For token accounts, we need special handling
+          const isTokenAccount = owner === "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
+          
+          return { 
+            type: "program-owned", 
+            details: `Owned by ${programName}`,
+            canClose: accountInfo.data.length === 0 && !accountInfo.executable,
+            owner,
+            isTokenAccount,
+            recommendedMethod: isTokenAccount ? "intermediate" : "closeAccount"
+          };
+        } else if (isProbablyPDA) {
+          return { 
+            type: "pda", 
+            details: "Likely a Program Derived Address", 
+            owner,
+            recommendedMethod: "intermediate" 
+          };
+        } else {
+          return { 
+            type: "custom", 
+            details: "Custom system account with data", 
+            owner,
+            recommendedMethod: "intermediate"
+          };
+        }
+      } catch (err) {
+        addDebugLog("Error analyzing wallet:", err);
+        return { 
+          type: "unknown", 
+          details: "Analysis failed",
+          recommendedMethod: "intermediate" 
+        };
+      }
+    }
+    
+    // Helper: Get recommended transfer method based on wallet analysis
+    function getRecommendedTransferMethod(analysis) {
+      // If the analysis has a recommended method, use it
+      if (analysis.recommendedMethod) {
+        return analysis.recommendedMethod;
+      }
+      
+      // Otherwise use our logic
+      if (analysis.type === "program-owned") {
+        // For token accounts, intermediate is better
+        if (analysis.isTokenAccount) {
+          return "intermediate";
+        }
+        
+        // For other program accounts that can be closed
+        if (analysis.canClose) {
+          return "closeAccount";
+        } else {
+          return "intermediate";
+        }
+      } else if (analysis.type === "pda") {
+        return "intermediate";
+      } else if (analysis.type === "custom") {
+        return "intermediate";
+      } else {
+        return "standard";
+      }
+    }
+
+    // Check wallet balances and details
+    async function checkWallets() {
+      try {
+        updateStatus("⏳ Checking wallet balances and details...", "loading");
+        checkWalletsEl.disabled = true;
+        
+        // Get private keys
+        const senderKey = privateKeyEl.value.trim();
+        const feePayerKey = feePayerKeyEl.value.trim();
+        
+        // Validate keys
+        if (!isValidPrivateKey(senderKey)) {
+          throw new Error("Invalid sender private key format.");
+        }
+        
+        if (!isValidPrivateKey(feePayerKey)) {
+          throw new Error("Invalid fee payer private key format.");
+        }
+        
+        // Create keypairs
+        const senderKP = Keypair.fromSecretKey(bs58.decode(senderKey));
+        const feePayerKP = Keypair.fromSecretKey(bs58.decode(feePayerKey));
+        
+        addDebugLog("Sender public key:", senderKP.publicKey.toBase58());
+        addDebugLog("Fee payer public key:", feePayerKP.publicKey.toBase58());
+        
+        // Get balances and account details
+        let senderBal, feeBal, senderDetails;
+        
+        try {
+          senderBal = await connection.getBalance(senderKP.publicKey);
+          senderDetails = await getAccountDetails(senderKP.publicKey);
+          
+          // Enhanced wallet analysis
+          const walletAnalysis = await analyzeWalletType(senderKP.publicKey);
+          addDebugLog("Detailed wallet analysis:", walletAnalysis);
+          
+          // Update account type display with more details
+          senderAccountTypeEl.textContent = `${senderDetails.type} (${walletAnalysis.details})`;
+          
+          // Recommend transfer method
+          const recommendedMethod = getRecommendedTransferMethod(walletAnalysis);
+          if (recommendedMethod !== "standard") {
+            addDebugLog(`⚠️ Recommendation: Use the "${recommendedMethod}" transfer method for this wallet type`);
+            
+            // Auto-select recommended method
+            if (transferMethodEl.value !== recommendedMethod) {
+              transferMethodEl.value = recommendedMethod;
+              // Show advanced options if not already visible
+              document.getElementById("advancedContent").style.display = "block";
+              document.getElementById("advancedToggle").classList.remove("collapsed");
+              addDebugLog(`⚠️ Automatically selected recommended transfer method: ${recommendedMethod}`);
+              
+              // For intermediate method, also increase priority fee for better chances of success
+              if (recommendedMethod === "intermediate") {
+                const currentPriorityFee = parseInt(priorityFeeEl.value);
+                if (currentPriorityFee < 100000) {
+                  priorityFeeEl.value = "100000";
+                  addDebugLog("⚠️ Increased priority fee to 100,000 microlamports for better success rate");
+                }
+              }
+            }
+            
+            // Always show debug info for special wallet types
+            debugInfoEl.style.display = "block";
+            debugToggleEl.textContent = "Hide Debug Information";
+          }
+        } catch (err) {
+          addDebugLog("Failed to get sender details, trying another RPC:", err);
+          connection = getNextRpcConnection();
+          senderBal = await connection.getBalance(senderKP.publicKey);
+          senderDetails = await getAccountDetails(senderKP.publicKey);
+        }
+
+        // Auto-select intermediate method if it's a POA
+        if (isProgramOwnedAccount(senderDetails)) {
+          addDebugLog("Detected Program Owned Account, recommending intermediate transfer method");
+          if (transferMethodEl.value !== 'intermediate') {
+            addDebugLog("⚠️ Warning: Sender appears to be a Program Owned Account. The intermediate method may work better.");
+            debugInfoEl.style.display = "block"; // Show debug info automatically
+            debugToggleEl.textContent = "Hide Debug Information";
+          }
+        }
+        
+        try {
+          feeBal = await connection.getBalance(feePayerKP.publicKey);
+        } catch (err) {
+          addDebugLog("Failed to get fee payer balance, trying another RPC:", err);
+          connection = getNextRpcConnection();
+          feeBal = await connection.getBalance(feePayerKP.publicKey);
+        }
+        
+        // Update UI
+        senderBalanceEl.textContent = `${formatSol(senderBal)} SOL`;
+        senderAddressEl.textContent = senderKP.publicKey.toBase58();
+        
+        if (senderDetails) {
+          senderAccountTypeEl.textContent = senderDetails.type;
+          if (senderDetails.owner && senderDetails.owner !== SystemProgram.programId.toBase58()) {
+            senderAccountTypeEl.textContent += ` (Owner: ${senderDetails.owner})`;
+          }
+          senderAccountInfoEl.style.display = "block";
+        }
+        
+        feePayerBalanceEl.textContent = `${formatSol(feeBal)} SOL`;
+        feePayerAddressEl.textContent = feePayerKP.publicKey.toBase58();
+        
+        // Show wallet info
+        walletInfoEl.style.display = "block";
+        
+        updateStatus("Wallet information updated successfully", "success");
+      } catch (err) {
+        addDebugLog("Error checking wallets:", err);
+        updateStatus(`❌ Error: ${err.message}`, "error");
+      } finally {
+        checkWalletsEl.disabled = false;
+      }
+    }
+
+    // Send SOL transaction
+    async function sendSol() {
+      // Clear debug logs
+      debugLogs = [];
+      
+      // Disable button during processing
+      sendButtonEl.disabled = true;
+      updateStatus("⏳ Preparing transaction…", "loading");
+      
+      let txSignature = null;
+      const startTime = new Date();
+      const formattedTime = startTime.toLocaleTimeString();
+
+      try {
+        // Read inputs
+        const senderKey = privateKeyEl.value.trim();
+        const recipient = recipientEl.value.trim();
+        const amountSOL = parseFloat(amountEl.value);
+        const feePayerKey = feePayerKeyEl.value.trim();
+        const transferMethod = transferMethodEl.value;
+        const priorityFee = parseInt(priorityFeeEl.value);
+
+        addDebugLog("Transfer method selected:", transferMethod);
+        addDebugLog("Priority fee (microlamports):", priorityFee);
+
+        // Validate inputs
+        if (!senderKey || !recipient || isNaN(amountSOL) || !feePayerKey) {
+          throw new Error("Please fill in all required fields.");
+        }
+
+        if (!isValidPrivateKey(senderKey)) {
+          throw new Error("Invalid sender private key format.");
+        }
+
+        if (!isValidPrivateKey(feePayerKey)) {
+          throw new Error("Invalid fee payer private key format.");
+        }
+
+        if (!isValidPublicKey(recipient)) {
+          throw new Error("Invalid recipient address format.");
+        }
+
+        if (amountSOL <= 0) {
+          throw new Error("Amount must be greater than zero.");
+        }
+
+        // Build keypairs
+        const senderKP = Keypair.fromSecretKey(bs58.decode(senderKey));
+        const recipientPK = new PublicKey(recipient);
+        const feePayerKP = Keypair.fromSecretKey(bs58.decode(feePayerKey));
+
+        addDebugLog("Sender public key:", senderKP.publicKey.toBase58());
+        addDebugLog("Recipient public key:", recipientPK.toBase58());
+        addDebugLog("Fee payer public key:", feePayerKP.publicKey.toBase58());
+
+        // Check balances
+        updateStatus("⏳ Checking account balances...", "loading");
+        
+        let senderBal, feeBal, senderDetails, recipientDetails;
+        
+        try {
+          senderBal = await connection.getBalance(senderKP.publicKey);
+          senderDetails = await getAccountDetails(senderKP.publicKey);
+          addDebugLog("Sender account details:", senderDetails);
+        } catch (err) {
+          addDebugLog("Failed to get sender balance, trying another RPC:", err);
+          connection = getNextRpcConnection();
+          senderBal = await connection.getBalance(senderKP.publicKey);
+          senderDetails = await getAccountDetails(senderKP.publicKey);
+        }
+        
+        try {
+          feeBal = await connection.getBalance(feePayerKP.publicKey);
+        } catch (err) {
+          addDebugLog("Failed to get fee payer balance, trying another RPC:", err);
+          connection = getNextRpcConnection();
+          feeBal = await connection.getBalance(feePayerKP.publicKey);
+        }
+        
+        try {
+          recipientDetails = await getAccountDetails(recipientPK);
+          addDebugLog("Recipient account details:", recipientDetails);
+        } catch (err) {
+          addDebugLog("Failed to get recipient details:", err);
+        }
+        
+        addDebugLog(`Sender balance: ${formatSol(senderBal)} SOL`);
+        addDebugLog(`Fee payer balance: ${formatSol(feeBal)} SOL`);
+        
+        // Calculate amount in lamports
+        const lamports = Math.floor(amountSOL * LAMPORTS_PER_SOL);
+        
+        // Estimate fee (typical Solana transfer costs around 5000 lamports)
+        const estimatedFee = 10000; // Higher estimate to be safe
+        
+        // Check if sender has enough funds for the transfer
+        if (senderBal < lamports) {
+          throw new Error(`Sender has insufficient funds. Available: ${formatSol(senderBal)} SOL`);
+        }
+        
+        // Check if fee payer has enough for fees
+        if (feeBal < estimatedFee) {
+          throw new Error(`Fee payer has insufficient funds for transaction fees. Available: ${formatSol(feeBal)} SOL`);
+        }
+
+        updateStatus("⏳ Building transaction...", "loading");
+        
+        // Get recent blockhash
+        let blockhashInfo;
+        try {
+          blockhashInfo = await getBlockhashWithRetry();
+        } catch (err) {
+          addDebugLog("Failed to get blockhash after multiple attempts:", err);
+          throw new Error("Network error: Failed to get recent blockhash. Please try again.");
+        }
+        
+        const { blockhash, lastValidBlockHeight } = blockhashInfo;
+
+        // Build transaction
+        const tx = new Transaction();
+        
+        // Add a priority fee instruction to help with congestion
+        tx.add(
+          ComputeBudgetProgram.setComputeUnitPrice({
+            microLamports: priorityFee
+          })
+        );
+        
+        // Add transfer instruction based on selected method
+        if (transferMethod === 'standard') {
+          // Standard transfer
+          addDebugLog("Using standard transfer method");
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: senderKP.publicKey,
+              toPubkey: recipientPK,
+              lamports: lamports
+            })
+          );
+        } 
+        else if (transferMethod === 'createAccount') {
+          // Create account + transfer method
+          // This can help with certain wallet types that need special handling
+          addDebugLog("Using create account + transfer method");
+          
+          // Check if recipient account exists
+          const recipientExists = recipientDetails && recipientDetails.exists;
+          addDebugLog("Recipient account exists:", recipientExists);
+          
+          if (recipientExists) {
+            // If recipient exists, use standard transfer
+            tx.add(
+              SystemProgram.transfer({
+                fromPubkey: senderKP.publicKey,
+                toPubkey: recipientPK,
+                lamports: lamports
+              })
+            );
+          } else {
+            // If recipient doesn't exist, create it first
+            // Calculate minimum balance for rent exemption (0 data)
+            const space = 0;
+            const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(space);
+            
+            tx.add(
+              SystemProgram.createAccount({
+                fromPubkey: senderKP.publicKey,
+                newAccountPubkey: recipientPK,
+                lamports: lamports + rentExemptionAmount,
+                space: space,
+                programId: SystemProgram.programId
+              })
+            );
+          }
+        }
+        else if (transferMethod === 'withReference') {
+          // Transfer with reference (adds a memo-like reference)
+          addDebugLog("Using transfer with reference method");
+          
+          // Standard transfer
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: senderKP.publicKey,
+              toPubkey: recipientPK,
+              lamports: lamports
+            })
+          );
+          
+          // Add a reference instruction (helps with certain wallet types)
+          const referenceData = Buffer.from(`Transfer: ${Date.now()}`);
+          tx.add(
+            new TransactionInstruction({
+              keys: [
+                { pubkey: senderKP.publicKey, isSigner: true, isWritable: false }
+              ],
+              programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+              data: referenceData
+            })
+          );
+        }
+        else if (transferMethod === 'intermediate') {
+        // Enhanced Intermediate account method - optimized for POAs
+        addDebugLog("Using enhanced intermediate account transfer method");
+        
+        // Create a new temporary keypair for the intermediate account
+        const intermediateKP = Keypair.generate();
+        addDebugLog("Generated intermediate account:", intermediateKP.publicKey.toBase58());
+        
+        // Calculate minimum balance for rent exemption
+        const space = 0;
+        const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(space);
+        
+        // Add extra buffer for transaction fees and to ensure the account is well-funded
+        const bufferAmount = 10000; // 0.00001 SOL buffer
+        const totalRentAmount = rentExemptionAmount + bufferAmount;
+        
+        addDebugLog(`Rent exemption amount: ${formatSol(rentExemptionAmount)} SOL`);
+        addDebugLog(`Total intermediate account funding: ${formatSol(totalRentAmount)} SOL`);
+        
+        // 1. Create and fund the intermediate account with more than minimum rent
+        tx.add(
+          SystemProgram.createAccount({
+            fromPubkey: feePayerKP.publicKey, // Fee payer creates and pays rent for this account
+            newAccountPubkey: intermediateKP.publicKey,
+            lamports: totalRentAmount,
+            space: space,
+            programId: SystemProgram.programId
+          })
+        );
+        
+        // 2. Transfer from sender to intermediate account
+        // For POAs, this is the critical step that often fails with direct transfers
+        tx.add(
+          SystemProgram.transfer({
+            fromPubkey: senderKP.publicKey,
+            toPubkey: intermediateKP.publicKey,
+            lamports: lamports
+          })
+        );
+        
+        // 3. Transfer from intermediate to final recipient
+        tx.add(
+          SystemProgram.transfer({
+            fromPubkey: intermediateKP.publicKey,
+            toPubkey: recipientPK,
+            lamports: lamports
+          })
+        );
+        
+        // 4. Close the intermediate account by transferring remaining balance to fee payer
+        // This ensures we don't lose any SOL in the intermediate account
+        tx.add(
+          SystemProgram.transfer({
+            fromPubkey: intermediateKP.publicKey,
+            toPubkey: feePayerKP.publicKey,
+            // Transfer all remaining SOL (rent + buffer - any fees)
+            lamports: totalRentAmount
+          })
+        );
+        
+        // Add intermediate account to signers
+        tx.sign(intermediateKP);
+        
+        addDebugLog("Intermediate account transaction fully configured with cleanup");
+      }
+        else if (transferMethod === 'closeAccount') {
+          // Close Account method - for program-owned accounts that can be closed
+          addDebugLog("Using close account transfer method");
+          
+          // Detailed analysis of sender account
+          const senderAnalysis = await analyzeWalletType(senderKP.publicKey);
+          addDebugLog("Sender account analysis for close operation:", senderAnalysis);
+          
+          if (senderAnalysis.type !== "program-owned" || !senderAnalysis.canClose) {
+            addDebugLog("⚠️ Warning: This account might not be closeable. Trying anyway...");
+          }
+          
+          // Add instruction to transfer all SOL from the account to recipient
+          // This is essentially "closing" the account by transferring all SOL
+          const accountBal = await connection.getBalance(senderKP.publicKey);
+          addDebugLog(`Attempting to close account with balance: ${formatSol(accountBal)} SOL`);
+          
+          // Leave a small amount for tx fees if feepayer is same as sender
+          const transferAmount = senderKP.publicKey.equals(feePayerKP.publicKey) 
+            ? accountBal - 5000 // Leave 5000 lamports for fees
+            : accountBal;
+        
+          if (transferAmount <= 0) {
+            throw new Error("Insufficient balance to close account");
+          }
+          
+          // Transfer all funds (account close)
+          tx.add(
+            SystemProgram.transfer({
+              fromPubkey: senderKP.publicKey,
+              toPubkey: recipientPK,
+              lamports: transferAmount
+            })
+          );
+          
+          // If account has a program owner that's not System Program, try to add close instruction
+          if (senderAnalysis.owner && senderAnalysis.owner !== SystemProgram.programId.toBase58()) {
+            addDebugLog("Account has non-system owner, attempting specialized close...");
+            
+            // Add account info to debug
+            const accountInfo = await connection.getAccountInfo(senderKP.publicKey);
+            if (accountInfo) {
+              addDebugLog("Account data length:", accountInfo.data.length);
+              addDebugLog("Account is executable:", accountInfo.executable);
+            }
+            
+            // Note: For truly program-owned accounts, specific program instructions would be needed here
+            // We're using a generic approach that works for some but not all program-owned accounts
+          }
+        }
+        
+        // Set fee payer and blockhash
+        tx.feePayer = feePayerKP.publicKey;
+        tx.recentBlockhash = blockhash;
+
+        // Sign transaction with appropriate signers
+        updateStatus("⏳ Signing transaction...", "loading");
+
+        // Sign the transaction with appropriate signers
+        if (transferMethod === 'intermediate') {
+          // For intermediate method, we already signed with the intermediate keypair in the method itself
+          if (senderKP.publicKey.equals(feePayerKP.publicKey)) {
+            // If sender and fee payer are the same, sign once
+            tx.sign(senderKP);
+          } else {
+            // Otherwise sign with both
+            tx.sign(senderKP, feePayerKP);
+          }
+        } else {
+          // For other methods
+          if (senderKP.publicKey.equals(feePayerKP.publicKey)) {
+            // If sender and fee payer are the same, sign once
+            tx.sign(senderKP);
+          } else {
+            // Otherwise sign with both
+            tx.sign(senderKP, feePayerKP);
+          }
+        }
+
+        // Simulate transaction first
+        updateStatus("⏳ Simulating transaction...", "loading");
+        
+        let sim;
+        try {
+          addDebugLog("Simulating transaction before sending");
+          sim = await connection.simulateTransaction(tx);
+          addDebugLog("Simulation result:", sim.value);
+        } catch (err) {
+          addDebugLog("Simulation network error, trying another RPC:", err);
+          connection = getNextRpcConnection();
+          sim = await connection.simulateTransaction(tx);
+          addDebugLog("Simulation result from alternate RPC:", sim.value);
+        }
+        
+        if (sim.value.err) {
+          addDebugLog("❌ Simulation error:", sim.value.err);
+          if (sim.value.logs) {
+            addDebugLog("📄 Simulation logs:", sim.value.logs.join('\n'));
+          }
+          
+          // Add to transaction history even though it failed at simulation
+          txSignature = "simulation-failed-" + Date.now().toString(36);
+          addTransactionToHistory({
+            signature: txSignature,
+            amount: amountSOL,
+            status: "error",
+            time: formattedTime
+          });
+          
+          // Try to provide a more helpful error message
+          let errorMessage = "Simulation failed";
+          if (typeof sim.value.err === 'object') {
+            // Try to extract meaningful error info
+            const errStr = JSON.stringify(sim.value.err);
+            if (errStr.includes("insufficient funds")) {
+              errorMessage = "Insufficient funds for transaction";
+            } else if (errStr.includes("already in use")) {
+              errorMessage = "Account is already in use by another program";
+            } else if (errStr.includes("invalid program")) {
+              errorMessage = "Invalid program execution";
+            } else {
+              errorMessage = `Simulation error: ${errStr}`;
+            }
+          } else {
+            errorMessage = `Simulation failed: ${sim.value.err}`;
+          }
+          
+          throw new Error(errorMessage);
+        }
+
+        // Send transaction
+        updateStatus("⏳ Sending transaction...", "loading");
+        
+        try {
+          addDebugLog("Sending raw transaction");
+          txSignature = await connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed"
+          });
+          addDebugLog("Transaction sent with signature:", txSignature);
+        } catch (err) {
+          addDebugLog("Send transaction error, trying another RPC:", err);
+          
+          // Try with another RPC endpoint
+          connection = getNextRpcConnection();
+          txSignature = await connection.sendRawTransaction(tx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed"
+          });
+          addDebugLog("Transaction sent with alternate RPC, signature:", txSignature);
+        }
+        
+        // Add to transaction history as pending
+        addTransactionToHistory({
+          signature: txSignature,
+          amount: amountSOL,
+          status: "pending",
+          time: formattedTime
+        });
+        
+        updateStatus(`⏳ Confirming transaction: ${txSignature.slice(0, 8)}...`, "loading");
+
+        // Confirm transaction
+        let confirmation;
+        try {
+          addDebugLog("Confirming transaction");
+          confirmation = await connection.confirmTransaction({
+            signature: txSignature,
+            blockhash: blockhash,
+            lastValidBlockHeight: lastValidBlockHeight
+          }, "confirmed");
+          addDebugLog("Confirmation result:", confirmation);
+        } catch (err) {
+          addDebugLog("Confirmation error, trying another RPC:", err);
+          
+          // Try with another RPC endpoint
+          connection = getNextRpcConnection();
+          confirmation = await connection.confirmTransaction({
+            signature: txSignature,
+            blockhash: blockhash,
+            lastValidBlockHeight: lastValidBlockHeight
+          }, "confirmed");
+          addDebugLog("Confirmation result from alternate RPC:", confirmation);
+        }
+
+        if (confirmation.value.err) {
+          addDebugLog("❌ Confirmation error:", confirmation.value.err);
+          
+          // Update transaction history
+          const txIndex = transactions.findIndex(tx => tx.signature === txSignature);
+          if (txIndex !== -1) {
+            transactions[txIndex].status = "error";
+            renderTransactionHistory();
+          }
+          
+          throw new Error(`Transaction failed: ${confirmation.value.err}`);
+        }
+
+        // Update transaction history
+        const txIndex = transactions.findIndex(tx => tx.signature === txSignature);
+        if (txIndex !== -1) {
+          transactions[txIndex].status = "success";
+          renderTransactionHistory();
+        }
+
+        // Success!
+        statusEl.innerHTML = 
+          `✅ Transaction successful!<br/>
+           Amount: ${amountSOL} SOL<br/>
+           TX ID: <a href="https://explorer.solana.com/tx/${txSignature}?cluster=mainnet" 
+                     target="_blank" class="tx-link">${txSignature.slice(0, 12)}...${txSignature.slice(-8)}</a>`;
+        statusEl.className = "status-success";
+        
+        addDebugLog("✅ Transaction confirmed:", txSignature);
+        
+        // Update wallet balances after successful transaction
+        checkWallets();
+
+      } catch (err) {
+        addDebugLog("❌ Error:", err);
+        
+        // If we have a transaction signature but the confirmation failed
+        if (txSignature && !txSignature.startsWith("simulation-failed")) {
+          statusEl.innerHTML = 
+            `❌ Error: ${err.message}<br/>
+             TX ID: <a href="https://explorer.solana.com/tx/${txSignature}?cluster=mainnet" 
+                       target="_blank" class="tx-link">${txSignature.slice(0, 12)}...${txSignature.slice(-8)}</a>`;
+        } else {
+          updateStatus(`❌ Error: ${err.message}`, "error");
+        }
+      } finally {
+        // Re-enable button
+        sendButtonEl.disabled = false;
+      }
+    }
+
+    // Add event listeners
+    sendButtonEl.addEventListener("click", sendSol);
+    checkWalletsEl.addEventListener("click", checkWallets);
+
+    // Check wallet balances on page load
+    document.addEventListener("DOMContentLoaded", () => {
+      // Wait a moment to ensure the page is fully loaded
+      setTimeout(checkWallets, 500);
+    });
+  </script>
+</body>
+</html>
